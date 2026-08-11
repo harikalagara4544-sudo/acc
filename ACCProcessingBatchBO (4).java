@@ -3108,7 +3108,16 @@ public class ACCProcessingBatchBO extends EmailNotificationBO {
 				if(!matchFound && enterACCApplicationsSuppMTOSummaryDVO.getM_strCurrentEvent().contains("E2A")){
 					for(EnterACCEventPartDetailsDTO previousEventPartDetails : m_lEnterACCPreviousEventPartDetailsDTO){
 						if(!previousEventPartDetails.isM_bolMatchDone()){
-							if(compareCurrentAndPreviousPartData(enterACCApplicationsSuppMTOSummaryDVO,currentEventPartDetails, previousEventPartDetails, "PROC_GROUP_CHANGE_MATCH")){
+							//Inline PROC_GROUP_CHANGE_MATCH logic for E2A (bypassing FEMD check since we are already in FEMD loop)
+							if(currentEventPartDetails.getM_strPartNumber().equalsIgnoreCase(previousEventPartDetails.getM_strPartNumber())
+								&& !(currentEventPartDetails.getM_strProcSectCode().equalsIgnoreCase(previousEventPartDetails.getM_strProcSectCode()))
+								&& currentEventPartDetails.getM_strSupplierNumber().equalsIgnoreCase(previousEventPartDetails.getM_strSupplierNumber())
+								&& currentEventPartDetails.getM_strPlantLocCode().equalsIgnoreCase(previousEventPartDetails.getM_strPlantLocCode())
+								&& currentEventPartDetails.getM_strPartSectionCode().equalsIgnoreCase(previousEventPartDetails.getM_strPartSectionCode())
+								&& currentEventPartDetails.getM_strModelCatCode().equals(previousEventPartDetails.getM_strModelCatCode())
+								&& currentEventPartDetails.getM_decShareRatePercent().equals(previousEventPartDetails.getM_decShareRatePercent())
+								&& currentEventPartDetails.getM_intPartQty().compareTo(previousEventPartDetails.getM_intPartQty()) == 0
+								&& currentEventPartDetails.getM_strPartColorCode().equalsIgnoreCase(previousEventPartDetails.getM_strPartColorCode())){
 								//E2A: Mark as matched to exclude from Part Added/Dropped processing - no ACC generated for Process Section change
 								previousEventPartDetails.setM_bolMatchDone(true);
 								currentEventPartDetails.setM_bolMatchDone(true);
@@ -6246,7 +6255,16 @@ public class ACCProcessingBatchBO extends EmailNotificationBO {
 				if(!matchFound && enterACCApplicationsSuppMTOSummaryDVO.getM_strCurrentEvent().contains("E2A")){
 					for(EnterACCEventPartDetailsDTO previousEventPartDetails : m_lEnterACCPreviousEventPartDetailsDTO){
 						if(!previousEventPartDetails.isM_bolMatchDone()){
-							if(compareCurrentAndPreviousPartData(enterACCApplicationsSuppMTOSummaryDVO,currentEventPartDetails, previousEventPartDetails, "DESIGN_SECT_CHANGE_MATCH")){
+							//Inline DESIGN_SECT_CHANGE_MATCH logic for E2A (bypassing FEMD check since we are already in FEMD loop)
+							if(currentEventPartDetails.getM_strPartNumber().equalsIgnoreCase(previousEventPartDetails.getM_strPartNumber())
+								&& currentEventPartDetails.getM_strProcSectCode().equalsIgnoreCase(previousEventPartDetails.getM_strProcSectCode())
+								&& currentEventPartDetails.getM_strSupplierNumber().equalsIgnoreCase(previousEventPartDetails.getM_strSupplierNumber())
+								&& currentEventPartDetails.getM_strPlantLocCode().equalsIgnoreCase(previousEventPartDetails.getM_strPlantLocCode())
+								&& !(currentEventPartDetails.getM_strPartSectionCode().equalsIgnoreCase(previousEventPartDetails.getM_strPartSectionCode()))
+								&& currentEventPartDetails.getM_strModelCatCode().equals(previousEventPartDetails.getM_strModelCatCode())
+								&& currentEventPartDetails.getM_decShareRatePercent().equals(previousEventPartDetails.getM_decShareRatePercent())
+								&& currentEventPartDetails.getM_intPartQty().compareTo(previousEventPartDetails.getM_intPartQty()) == 0
+								&& currentEventPartDetails.getM_strPartColorCode().equalsIgnoreCase(previousEventPartDetails.getM_strPartColorCode())){
 								//E2A: Mark as matched to exclude from Part Added/Dropped processing - no ACC generated for Design Section change
 								previousEventPartDetails.setM_bolMatchDone(true);
 								currentEventPartDetails.setM_bolMatchDone(true);
@@ -12208,14 +12226,16 @@ public class ACCProcessingBatchBO extends EmailNotificationBO {
 			//Mark both records as matched to prevent them from appearing as Part Added/Dropped.
 			else if(enterACCApplicationsSuppMTOSummaryDVO.getM_strCurrentEvent().contains("E2A")){
 				//Check if proc sect or design sect actually differs (the only differences excluded for E2A)
-				boolean hasProcSectDiff = !previousEventPartDetailsIndexObj.getM_strProcSectCode().equalsIgnoreCase(currentEventPartDetails.getM_strProcSectCode());
-				boolean hasDesignSectDiff = previousEventPartDetailsIndexObj.getM_strPartSectionCode()!=null && 
+				boolean hasProcSectDiff = previousEventPartDetailsIndexObj.getM_strProcSectCode()!=null && currentEventPartDetails.getM_strProcSectCode()!=null &&
+						!previousEventPartDetailsIndexObj.getM_strProcSectCode().equalsIgnoreCase(currentEventPartDetails.getM_strProcSectCode());
+				boolean hasDesignSectDiff = previousEventPartDetailsIndexObj.getM_strPartSectionCode()!=null && currentEventPartDetails.getM_strPartSectionCode()!=null &&
 						!previousEventPartDetailsIndexObj.getM_strPartSectionCode().equalsIgnoreCase(currentEventPartDetails.getM_strPartSectionCode());
 				if(hasProcSectDiff || hasDesignSectDiff){
 					previousEventPartDetailsIndexObj.setM_bolMatchDone(true);
 					m_lEnterACCPreviousEventPartDetailsDTO.get(index).setM_bolMatchDone(true);
 					currentEventPartDetails.setM_bolMatchDone(true);
 					log.info("E2A event - marking record as matched in MultipleIndicatorChange (only Proc/Design Sect diff). Part: "+currentEventPartDetails.getM_strPartNumber());
+					break;
 				}
 			}
 			
