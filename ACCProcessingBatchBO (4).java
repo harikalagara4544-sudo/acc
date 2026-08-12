@@ -6276,6 +6276,34 @@ public class ACCProcessingBatchBO extends EmailNotificationBO {
 					}
 				}
 				
+				//E2A - For E2A events, if the only difference is Design Section AND/OR Model Cat Code (E/M/F territory/transmission conversion),
+				//mark as matched and skip ACC generation. CSS converts transmission to engine code and territory parts reassign at E2A.
+				if(!matchFound && enterACCApplicationsSuppMTOSummaryDVO.getM_strCurrentEvent().contains("E2A")){
+					for(EnterACCEventPartDetailsDTO previousEventPartDetails : m_lEnterACCPreviousEventPartDetailsDTO){
+						if(!previousEventPartDetails.isM_bolMatchDone()){
+							//Match when part number, supplier, plant, share rate, qty, and color code are the same
+							//but Design Section and/or Model Cat Code differ (covers E<->M<->F conversions)
+							if(currentEventPartDetails.getM_strPartNumber().equalsIgnoreCase(previousEventPartDetails.getM_strPartNumber())
+								&& currentEventPartDetails.getM_strSupplierNumber().equalsIgnoreCase(previousEventPartDetails.getM_strSupplierNumber())
+								&& currentEventPartDetails.getM_strPlantLocCode().equalsIgnoreCase(previousEventPartDetails.getM_strPlantLocCode())
+								&& currentEventPartDetails.getM_decShareRatePercent().equals(previousEventPartDetails.getM_decShareRatePercent())
+								&& currentEventPartDetails.getM_intPartQty().compareTo(previousEventPartDetails.getM_intPartQty()) == 0
+								&& currentEventPartDetails.getM_strPartColorCode().equalsIgnoreCase(previousEventPartDetails.getM_strPartColorCode())
+								&& (!(currentEventPartDetails.getM_strPartSectionCode().equalsIgnoreCase(previousEventPartDetails.getM_strPartSectionCode()))
+									|| !(currentEventPartDetails.getM_strModelCatCode().equals(previousEventPartDetails.getM_strModelCatCode())))){
+								//E2A: Mark as matched - Design Section/Model Cat Code change due to CSS transmission-to-engine conversion or territory reassignment
+								previousEventPartDetails.setM_bolMatchDone(true);
+								currentEventPartDetails.setM_bolMatchDone(true);
+								matchFound = true;
+								log.info("E2A event - skipping ACC generation for Design Section/Model Cat Code change. Part: "+currentEventPartDetails.getM_strPartNumber()
+									+" DesignSect: "+previousEventPartDetails.getM_strPartSectionCode()+"->"+currentEventPartDetails.getM_strPartSectionCode()
+									+" ModelCat: "+previousEventPartDetails.getM_strModelCatCode()+"->"+currentEventPartDetails.getM_strModelCatCode());
+								break;
+							}
+						}
+					}
+				}
+				
 				//Below block is for part color code change only between current and base event
 				if(enterACCApplicationsSuppMTOSummaryDVO.getM_strCurrentEvent().trim().contains("PSP")){
 					if(!matchFound){
